@@ -5,12 +5,13 @@ import org.projectodd.vertx.jmsclient.JMSBridgeVerticle;
 import org.vertx.java.core.AsyncResult;
 import org.vertx.java.core.AsyncResultHandler;
 import org.vertx.java.core.Handler;
+import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.eventbus.Message;
 import org.vertx.java.core.json.JsonObject;
 import org.vertx.testtools.TestVerticle;
 import org.vertx.testtools.VertxAssert;
 
-public class JMSBridgeVerticleTest extends TestVerticle {
+public class JMSBridgeVerticleBufferTest extends TestVerticle {
 
     @Override
     public void start() {
@@ -19,19 +20,20 @@ public class JMSBridgeVerticleTest extends TestVerticle {
             public void handle(AsyncResult<String> brokerStartResult) {
                 initialize();
                 VertxAssert.assertTrue(brokerStartResult.succeeded());
+                brokerStartResult.result();
                 startTests();
             }
         });
-
     }
 
     @Test
-    public void testBidirectionalBridgeOfQueueWithJsonContentType() throws InterruptedException {
-        vertx.eventBus().registerLocalHandler("queues.foo.inbound", new Handler<Message<JsonObject>>() {
+    public void testBidirectionalBridgeOfQueueWithBufferContentType() throws InterruptedException {
+        vertx.eventBus().registerLocalHandler("queues.foo.inbound", new Handler<Message<Buffer>>() {
             @Override
-            public void handle(Message<JsonObject> event) {
-                JsonObject body = event.body();
-                VertxAssert.assertEquals("howdy", body.getString("payload"));
+            public void handle(Message<Buffer> event) {
+                Buffer body = event.body();
+                System.err.println("received: " + body);
+                VertxAssert.assertEquals("howdy", body.getString(0, body.length()));
                 event.reply(true);
                 VertxAssert.testComplete();
             }
@@ -46,9 +48,10 @@ public class JMSBridgeVerticleTest extends TestVerticle {
             @Override
             public void handle(AsyncResult<String> event) {
                 System.err.println(" bridge deployed: " + event.succeeded());
-                vertx.eventBus().send("queues.foo.outbound", new JsonObject().putString("payload", "howdy"));
+                Buffer buffer = new Buffer();
+                buffer.appendString("howdy");
+                vertx.eventBus().send("queues.foo.outbound", buffer);
             }
         });
     }
-
 }
