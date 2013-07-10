@@ -9,7 +9,6 @@ public class ActiveMQJMSClientModule extends Verticle {
 
     @Override
     public void start(final Future<Void> startedResult) {
-        System.err.println( "deploy AMQ client module" );
         container.deployVerticle("org.projectodd.vertx.jmsclient.JMSClientVerticle", new Handler<AsyncResult<String>>() {
             @Override
             public void handle(AsyncResult<String> event) {
